@@ -1,5 +1,3 @@
-
-
 ```
 ██╗  ██╗██╗   ██╗██████╗
 ╚██╗██╔╝██║   ██║██╔══██╗
@@ -11,14 +9,12 @@
 
 **Download X / Twitter videos from your terminal beautifully.**
 
-[![npm version](https://img.shields.io/npm/v/xvd?color=cyan&style=flat-square)](https://www.npmjs.com/package/xvd)
-[![npm downloads](https://img.shields.io/npm/dm/xvd?color=cyan&style=flat-square)](https://www.npmjs.com/package/xvd)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Node ≥ 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square)](https://nodejs.org)
-[![GitHub stars](https://img.shields.io/github/stars/ercan-er/xvd?color=yellow&style=flat-square)](https://github.com/ercan-er/xvd/stargazers)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4?style=flat-square)](https://github.com/ercan-er/xvd/issues)
-
-
+[npm version](https://www.npmjs.com/package/xvd-cli)
+[npm downloads](https://www.npmjs.com/package/xvd-cli)
+[License: MIT](LICENSE)
+[Node ≥ 18](https://nodejs.org)
+[GitHub stars](https://github.com/ercan-er/xvd-cli/stargazers)
+[PRs welcome](https://github.com/ercan-er/xvd-cli/issues)
 
 ---
 
@@ -51,7 +47,7 @@ npm install -g xvd-cli
 ```
 
 That's it. No Python, no yt-dlp, no API key.
-*(ffmpeg optional — required only for GIF conversion, watermarks, and HLS videos)*
+*(ffmpeg optional, required only for GIF conversion, watermarks, subtitle burning, and HLS videos)*
 
 ---
 
@@ -157,9 +153,33 @@ Two-pass GIF conversion with optimized palette — small file sizes, crisp color
 
 ```bash
 xvd https://x.com/user/status/123 --watermark ~/logo.png --watermark-pos bottom-right
+xvd https://x.com/user/status/123 --watermark ~/logo.png --watermark-size 120 --watermark-opacity 0.6
 ```
 
 Positions: `top-left` `top-right` `bottom-left` `bottom-right` `center`
+
+---
+
+### `--subtitle` — Burn subtitles in any language
+
+If the tweet has subtitle tracks (many news accounts and long-form videos do), `xvd` can fetch them, translate to any language, and burn them permanently into the video.
+
+```bash
+# Burn existing subtitles without translating
+xvd https://x.com/user/status/123 --subtitle en
+
+# Translate to Turkish and burn
+xvd https://x.com/user/status/123 --subtitle tr
+
+# Use your own LibreTranslate server (falls back to MyMemory if unreachable)
+xvd https://x.com/user/status/123 --subtitle tr --libre-url http://localhost:5000
+```
+
+Translation engine priority:
+1. **LibreTranslate** — self-hosted, unlimited, fast (set `--libre-url`)
+2. **MyMemory** — free public API, no key needed, auto-fallback
+
+> **Note:** Only works on videos that already have subtitle/caption tracks. If no tracks are found, xvd will skip this step and let you know.
 
 ---
 
@@ -183,22 +203,26 @@ Stores up to 200 entries in `~/.config/xvd/history.json`.
 ## 📖 All flags
 
 
-| Flag                    | Short | Default                     | Description                                         |
-| ----------------------- | ----- | --------------------------- | --------------------------------------------------- |
-| `--output <dir>`        | `-o`  | `~/Movies` or `~/Downloads` | Save directory                                      |
-| `--quality <preset>`    | `-q`  | `best`                      | `best` | `worst` | `720p` | `480p` | `360p` | `ask` |
-| `--concurrent <n>`      | `-c`  | `4`                         | Parallel downloads (batch/profile)                  |
-| `--gif`                 |       | `false`                     | Convert to animated GIF                             |
-| `--watermark <file>`    |       |                             | PNG watermark path                                  |
-| `--watermark-pos <pos>` |       | `bottom-right`              | Watermark position                                  |
-| `--notify`              |       | `false`                     | Desktop notification when done                      |
-| `--watch`               |       | `false`                     | Auto-download from clipboard                        |
-| `--batch <file>`        |       |                             | Path to URL list file                               |
-| `--profile <@user>`     |       |                             | Download all videos from profile                    |
-| `--from <YYYY-MM-DD>`   |       |                             | Profile: start date filter                          |
-| `--to <YYYY-MM-DD>`     |       |                             | Profile: end date filter                            |
-| `--keyword <text>`      |       |                             | Profile: keyword filter                             |
-| `--history`             |       | `false`                     | Show download history                               |
+| Flag                       | Short | Default        | Description                            |
+| -------------------------- | ----- | -------------- | -------------------------------------- |
+| `--output <dir>`           | `-o`  | `~/Movies`     | Save directory                         |
+| `--quality <preset>`       | `-q`  | `best`         | `best` `worst` `1080p` `720p` `ask`    |
+| `--concurrent <n>`         | `-c`  | `4`            | Parallel downloads (batch/profile)     |
+| `--gif`                    |       |                | Convert to animated GIF                |
+| `--watermark <file>`       |       |                | PNG watermark path                     |
+| `--watermark-pos <pos>`    |       | `bottom-right` | Watermark position                     |
+| `--watermark-size <px>`    |       | `150`          | Watermark width in pixels              |
+| `--watermark-opacity <n>`  |       | `0.7`          | Watermark opacity (0.0–1.0)            |
+| `--subtitle <lang>`        |       |                | Burn subtitles in target language      |
+| `--libre-url <url>`        |       |                | LibreTranslate server for translation  |
+| `--notify`                 |       |                | Desktop notification when done         |
+| `--watch`                  |       |                | Auto-download from clipboard           |
+| `--batch <file>`           |       |                | Path to URL list file                  |
+| `--profile <@user>`        |       |                | Download all videos from a profile     |
+| `--from <YYYY-MM-DD>`      |       |                | Profile: start date filter             |
+| `--to <YYYY-MM-DD>`        |       |                | Profile: end date filter               |
+| `--keyword <text>`         |       |                | Profile: keyword filter                |
+| `--history`                |       |                | Show download history                  |
 
 
 ---
@@ -212,8 +236,14 @@ xvd https://x.com/NASA/status/1902118174591521056
 # Save to desktop, convert to GIF, send notification
 xvd https://x.com/user/status/123 -o ~/Desktop --gif --notify
 
-# Burn a watermark, save to custom dir
-xvd https://x.com/user/status/123 --watermark ~/logo.png --watermark-pos bottom-right -o ~/Branded
+# Burn a watermark
+xvd https://x.com/user/status/123 --watermark ~/logo.png --watermark-size 120 --watermark-opacity 0.6
+
+# Burn subtitles in Turkish (MyMemory translation, no setup needed)
+xvd https://x.com/user/status/123 --subtitle tr
+
+# Burn subtitles using your own LibreTranslate server
+xvd https://x.com/user/status/123 --subtitle tr --libre-url http://localhost:5000
 
 # Watch mode — sit back, copy links
 xvd --watch -o ~/Videos --notify
@@ -238,12 +268,13 @@ xvd --history
 ffmpeg is **optional** but required for:
 
 
-| Feature             | Requires ffmpeg |
-| ------------------- | --------------- |
-| MP4 direct download | ❌ No            |
-| HLS/M3U8 streams    | ✅ Yes           |
-| GIF conversion      | ✅ Yes           |
-| Watermark overlay   | ✅ Yes           |
+| Feature              | Requires ffmpeg |
+| -------------------- | --------------- |
+| MP4 direct download  | ❌ No            |
+| HLS/M3U8 streams     | ✅ Yes           |
+| GIF conversion       | ✅ Yes           |
+| Watermark overlay    | ✅ Yes           |
+| Subtitle burning     | ✅ Yes           |
 
 
 **Install ffmpeg:**
@@ -264,8 +295,8 @@ winget install ffmpeg
 ## 🛠 Build from source
 
 ```bash
-git clone https://github.com/ercan-er/xvd
-cd xvd
+git clone https://github.com/ercan-er/xvd-cli
+cd xvd-cli
 npm install
 npm run build
 npm install -g .
@@ -278,7 +309,8 @@ npm install -g .
 - **No API key needed** — Uses Twitter's public syndication endpoint (the same one powering tweet embeds)
 - **HLS support** — Parses M3U8 playlists, downloads TS segments, concatenates with ffmpeg
 - **Clipboard watcher** — Polls clipboard every 600ms, fires on new X URLs
-- **Profile scraping** — Uses the v1.1 timeline API with guest-token auth (the same token embedded in Twitter's own web app)
+- **Profile scraping** — Uses Twitter's internal GraphQL API with guest-token auth (same endpoints the web app uses)
+- **Subtitle translation** — Fetches existing SRT tracks from the tweet, translates via LibreTranslate or MyMemory, burns with ffmpeg
 - **History** — Stored locally in `~/.config/xvd/history.json`, never leaves your machine
 
 ---
@@ -301,8 +333,10 @@ npm install -g .
 
 - `cdn.syndication.twimg.com` — video metadata
 - `api.fxtwitter.com` — fallback metadata
-- `api.twitter.com` — guest token + profile timeline
-- The video CDN URL returned by the above
+- `twitter.com/i/api/graphql` — profile scraping (guest token, no login)
+- `api.mymemory.translated.net` — subtitle translation fallback (only with `--subtitle`)
+- Your LibreTranslate server — if `--libre-url` is set
+- The video/subtitle CDN URLs returned by the above
 
 No telemetry. No tracking. All history is stored locally.
 
@@ -313,8 +347,8 @@ No telemetry. No tracking. All history is stored locally.
 Pull requests are welcome! Please open an issue first for large changes.
 
 ```bash
-git clone https://github.com/ercan-er/xvd
-cd xvd
+git clone https://github.com/ercan-er/xvd-cli
+cd xvd-cli
 npm install
 npm run dev -- https://x.com/NASA/status/1902118174591521056
 ```
@@ -323,4 +357,4 @@ npm run dev -- https://x.com/NASA/status/1902118174591521056
 
 ## 📄 License
 
-MIT © 2024
+MIT © 2026
