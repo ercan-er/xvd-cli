@@ -18,6 +18,9 @@ interface Props {
   outputDir?: string;
   postProcess?: PostProcessOptions;
   sendNotify: boolean;
+  subtitleLang?: string;
+  libreUrl?: string;
+  whisperUrl?: string;
   // batch
   batchFile?: string;
   concurrent: number;
@@ -35,6 +38,9 @@ export const App: React.FC<Props> = ({
   outputDir,
   postProcess,
   sendNotify,
+  subtitleLang,
+  libreUrl,
+  whisperUrl,
   batchFile,
   concurrent,
   profileUser,
@@ -51,6 +57,9 @@ export const App: React.FC<Props> = ({
         quality={quality}
         postProcess={postProcess}
         sendNotify={sendNotify}
+        subtitleLang={subtitleLang}
+        libreUrl={libreUrl}
+        whisperUrl={whisperUrl}
       />
     )}
     {mode === 'history' && <HistoryCommand />}

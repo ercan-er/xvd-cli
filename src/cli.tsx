@@ -104,6 +104,7 @@ function printHelp(): void {
     `  ${''.padEnd(16)}       ${c.val('top-left')}${c.dot(' · ')}${c.val('top-right')}${c.dot(' · ')}${c.val('bottom-left')}${c.dot(' · ')}${c.val('bottom-right')}${c.dot(' · ')}${c.val('center')}`,
     row('--watermark-size',   null, '<px>',        'Scale watermark to this width', '150'),
     row('--watermark-opacity',null, '<0.0–1.0>',   'Watermark transparency',        '0.7'),
+    row('--subtitle',         null, '<lang>',      'Burn subtitles in target lang', 'e.g. tr'),
     blank,
     line,
     blank,
@@ -134,9 +135,13 @@ function printHelp(): void {
     ex('$ xvd https://x.com/NASA/status/1902118174591521056'),
     ex('$ xvd https://x.com/user/status/123 -o ~/Desktop --gif --notify'),
     ex('$ xvd https://x.com/user/status/123 --watermark logo.png --watermark-pos bottom-right'),
-    ex('$ xvd https://x.com/user/status/123 -q ask',         'interactive picker'),
-    ex('$ xvd --watch -o ~/Videos --notify',                  'clipboard mode'),
-    ex('$ xvd --batch urls.txt -c 8',                         '8 parallel downloads'),
+    ex('$ xvd https://x.com/user/status/123 -q ask',                    'interactive picker'),
+    ex('$ xvd https://x.com/user/status/123 --subtitle tr',             'burn Turkish subtitles'),
+    ex('$ xvd https://x.com/user/status/123 --subtitle en',             'burn English subtitles'),
+    ex('$ xvd https://x.com/user/status/123 --subtitle es',             'burn Spanish subtitles'),
+    ex('$ xvd https://x.com/user/status/123 --subtitle tr --gif',       'subtitles + GIF'),
+    ex('$ xvd --watch -o ~/Videos --notify',                             'clipboard mode'),
+    ex('$ xvd --batch urls.txt -c 8',                                    '8 parallel downloads'),
     ex('$ xvd --profile @NASA --from 2024-01-01 -q 720p'),
     ex('$ xvd --history'),
     blank,
@@ -159,6 +164,9 @@ const cli = meow('', {
     watermarkPos:     { type: 'string',  default: 'bottom-right' },
     watermarkSize:    { type: 'number',  default: 150 },
     watermarkOpacity: { type: 'number',  default: 0.7 },
+    subtitle:     { type: 'string' },
+    libreUrl:     { type: 'string' },
+    whisperUrl:   { type: 'string' },
     notify:       { type: 'boolean', default: false },
     watch:        { type: 'boolean', default: false },
     batch:        { type: 'string' },
@@ -175,7 +183,9 @@ const cli = meow('', {
 const url         = cli.input[0];
 const {
   output, quality, concurrent,
-  gif, watermark, watermarkPos, watermarkSize, watermarkOpacity, notify,
+  gif, watermark, watermarkPos, watermarkSize, watermarkOpacity,
+  subtitle, libreUrl, whisperUrl,
+  notify,
   watch, batch, profile, from, to, keyword,
   history, help, version,
 } = cli.flags;
@@ -232,6 +242,9 @@ const { waitUntilExit } = render(
     outputDir={output}
     postProcess={postProcess}
     sendNotify={notify}
+    subtitleLang={subtitle}
+    libreUrl={libreUrl}
+    whisperUrl={whisperUrl}
     batchFile={batch}
     concurrent={concurrent}
     profileUser={profile}

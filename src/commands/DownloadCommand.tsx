@@ -5,7 +5,8 @@ import { TweetCard } from '../components/TweetCard.js';
 import { ProgressBar } from '../components/ProgressBar.js';
 import { QualitySelector } from '../components/QualitySelector.js';
 import { fetchTweetData, selectVariant, type TweetData, type VideoVariant } from '../api/twitter.js';
-import { downloadVideo, defaultOutputDir, buildFilename, type DownloadProgress, type PostProcessOptions } from '../media/download.js';
+import { downloadVideo, defaultOutputDir, buildFilename, type DownloadProgress, type PostProcessOptions, type SubtitleOptions } from '../media/download.js';
+import { resolveWhisperConfig } from '../media/transcribe.js';
 import { addEntry, getFileSize } from '../store/history.js';
 import { extractTweetId, resolveShortUrl } from '../utils/url.js';
 import { notifyDownloadDone } from '../platform/notify.js';
@@ -28,6 +29,7 @@ interface State {
   progress?: DownloadProgress;
   filePath?: string;
   error?: string;
+  warning?: string;
 }
 
 type Action =
@@ -38,6 +40,7 @@ type Action =
   | { type: 'DOWNLOADING' }
   | { type: 'PROGRESS'; progress: DownloadProgress }
   | { type: 'DONE'; filePath: string }
+  | { type: 'WARN'; message: string }
   | { type: 'ERROR'; message: string };
 
 function reducer(state: State, action: Action): State {
@@ -60,6 +63,7 @@ function reducer(state: State, action: Action): State {
     case 'DOWNLOADING': return { ...state, phase: 'downloading' };
     case 'PROGRESS':    return { ...state, phase: 'downloading', progress: action.progress };
     case 'DONE':        return { ...state, phase: 'done', filePath: action.filePath };
+    case 'WARN':        return { ...state, warning: action.message };
     case 'ERROR':       return { ...state, phase: 'error', error: action.message };
     default:            return state;
   }
@@ -73,9 +77,12 @@ interface Props {
   quality: string;
   postProcess?: PostProcessOptions;
   sendNotify?: boolean;
+  subtitleLang?: string;   // target language code, e.g. "tr"
+  libreUrl?: string;       // LibreTranslate server URL
+  whisperUrl?: string;     // Whisper-compatible transcription API URL
 }
 
-export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, postProcess, sendNotify = false }) => {
+export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, postProcess, sendNotify = false, subtitleLang, libreUrl, whisperUrl }) => {
   const { exit } = useApp();
   const [state, dispatch] = useReducer(reducer, { phase: 'resolving' });
 
@@ -86,12 +93,25 @@ export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, p
       const outDir = outputDir ?? defaultOutputDir();
       const filename = buildFilename(tweet.id, variant.quality);
 
+      // Only build subtitle opts when we have something to work with:
+      // existing tracks OR a Whisper server (explicit flag, XVD_WHISPER_URL env, or OPENAI_API_KEY env).
+      // If nothing is available the warning was already shown and we skip.
+      const hasWhisper = !!whisperUrl || !!resolveWhisperConfig();
+      const canSubtitle = subtitleLang && (tweet.subtitleTracks.length > 0 || hasWhisper);
+      const subtitleOpts: SubtitleOptions | undefined =
+        canSubtitle
+          ? { targetLang: subtitleLang!, libreUrl, whisperUrl, tracks: tweet.subtitleTracks }
+          : undefined;
+
+      const effectivePostProcess: PostProcessOptions | undefined =
+        subtitleOpts ? { ...postProcess, subtitle: subtitleOpts } : postProcess;
+
       const filePath = await downloadVideo(
         variant.url,
         outDir,
         filename,
         (p) => dispatch({ type: 'PROGRESS', progress: p }),
-        postProcess,
+        effectivePostProcess,
       );
 
       addEntry({
@@ -113,7 +133,7 @@ export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, p
       if (sendNotify) notifyDownloadDone(tweet.authorUsername, path.basename(filePath));
       dispatch({ type: 'DONE', filePath });
     },
-    [outputDir, postProcess, sendNotify],
+    [outputDir, postProcess, sendNotify, subtitleLang, libreUrl],
   );
 
   // ── Main effect ──────────────────────────────────────────────
@@ -140,7 +160,12 @@ export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, p
           return;
         }
 
-        // 4. Pick variant
+        // 4. Warn if subtitle was requested but no tracks and no Whisper source available
+        if (subtitleLang && !tweet.subtitleTracks.length && !whisperUrl && !resolveWhisperConfig()) {
+          dispatch({ type: 'WARN', message: `⚠  No subtitle tracks found for this video — downloading without subtitles.` });
+        }
+
+        // 5. Pick variant
         const askQuality = quality.toLowerCase() === 'ask';
         const variant = askQuality
           ? tweet.videoVariants[0]
@@ -215,6 +240,7 @@ export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, p
           ph === 'hls'       ? 'Downloading HLS segments…' :
           ph === 'gif'       ? 'Converting to GIF…' :
           ph === 'watermark' ? 'Applying watermark…' :
+          ph === 'subtitle'  ? 'Translating & burning subtitles…' :
                                'Downloading…';
         return (
           <Box flexDirection="column">
@@ -227,6 +253,11 @@ export const DownloadCommand: React.FC<Props> = ({ rawUrl, outputDir, quality, p
       })()}
       {state.phase === 'downloading' && !state.progress && (
         <Spinner label="Starting download…" />
+      )}
+
+      {/* Subtitle warning */}
+      {state.warning && (
+        <Text color="yellow">{state.warning}</Text>
       )}
 
       {/* Success */}
