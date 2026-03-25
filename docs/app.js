@@ -64,6 +64,7 @@ function appendLine(html, extraClass) {
   el.className = 't-line' + (extraClass ? ' ' + extraClass : '');
   el.innerHTML = html;
   body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
   return el;
 }
 
