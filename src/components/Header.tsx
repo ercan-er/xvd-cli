@@ -18,7 +18,7 @@ interface Props {
   version?: string;
 }
 
-export const Header: React.FC<Props> = ({ version = '1.0.0' }) => (
+export const Header: React.FC<Props> = ({ version = '1.1.1' }) => (
   <Box flexDirection="column" alignItems="center" marginBottom={1} marginTop={1}>
     {ART_LINES.map((line, i) => (
       <Text key={i} color={PALETTE[i]}>
